@@ -1,0 +1,1032 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><link rel="stylesheet" type="text/css" href="style.css" /><script type="text/javascript" src="highlight.js"></script></head><body><pre><span class="hs-pragma">{-# LANGUAGE CPP          #-}</span><span>
+</span><span id="line-2"></span><span>
+</span><span id="line-3"></span><span class="hs-comment">-- | Tree traversal for internal syntax.</span><span>
+</span><span id="line-4"></span><span>
+</span><span id="line-5"></span><span class="hs-keyword">module</span><span> </span><span class="hs-identifier">Agda.Syntax.Internal.Generic</span><span> </span><span class="hs-keyword">where</span><span class="hs-cpp">
+
+#if __GLASGOW_HASKELL__ &lt; 804
+</span><span class="hs-keyword">import</span><span> </span><span class="hs-identifier">Data.Monoid</span><span> </span><span class="hs-special">(</span><span class="hs-special">(</span><span class="hs-operator">&lt;&gt;</span><span class="hs-special">)</span><span class="hs-special">)</span><span class="hs-cpp">
+#endif
+</span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Agda.Syntax.Common.html"><span class="hs-identifier">Agda.Syntax.Common</span></a></span><span>
+</span><span id="line-11"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.html"><span class="hs-identifier">Agda.Syntax.Internal</span></a></span><span>
+</span><span id="line-12"></span><span class="hs-keyword">import</span><span> </span><span class="annot"><a href="Agda.Utils.Functor.html"><span class="hs-identifier">Agda.Utils.Functor</span></a></span><span>
+</span><span id="line-13"></span><span>
+</span><span id="line-14"></span><span class="hs-comment">-- | Generic term traversal.</span><span>
+</span><span id="line-15"></span><span class="hs-comment">--</span><span>
+</span><span id="line-16"></span><span class="hs-comment">--   Note: ignores sorts in terms!</span><span>
+</span><span id="line-17"></span><span class="hs-comment">--   (Does not traverse into or collect from them.)</span><span>
+</span><span id="line-18"></span><span>
+</span><span id="line-19"></span><span class="hs-keyword">class</span><span> </span><span id="TermLike"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-var">TermLike</span></a></span></span><span> </span><span id="local-6989586621680835247"><span class="annot"><a href="#local-6989586621680835247"><span class="hs-identifier hs-type">a</span></a></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-20"></span><span>
+</span><span id="line-21"></span><span>  </span><span class="hs-comment">-- | Generic traversal with post-traversal action.</span><span>
+</span><span id="line-22"></span><span>  </span><span class="hs-comment">--   Ignores sorts.</span><span>
+</span><span id="line-23"></span><span>  </span><span id="traverseTermM"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-type">traverseTermM</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621680835235"><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621680835235"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835235"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835247"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835235"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835247"><span class="hs-identifier hs-type">a</span></a></span></span><span>
+</span><span id="line-24"></span><span>
+</span><span id="line-25"></span><span>  </span><span class="hs-keyword">default</span><span> </span><span id="traverseTermM"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-type">traverseTermM</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621680835248"><span id="local-6989586621680835249"><span id="local-6989586621680835250"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621680835250"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Traversable</span></span><span> </span><span class="annot"><a href="#local-6989586621680835249"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835248"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621680835249"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835248"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="annot"><a href="#local-6989586621680835247"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-26"></span><span>                        </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835250"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835247"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835250"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835247"><span class="hs-identifier hs-type">a</span></a></span></span></span></span><span>
+</span><span id="line-27"></span><span>  </span><span id="local-6989586621680834975"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var hs-var">traverseTermM</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; m b) -&gt; a -&gt; m a
+forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+</span><span class="hs-identifier hs-var">traverse</span></span><span> </span><span class="annot"><span class="annottext">((b -&gt; m b) -&gt; a -&gt; m a)
+-&gt; ((Term -&gt; m Term) -&gt; b -&gt; m b) -&gt; (Term -&gt; m Term) -&gt; a -&gt; m a
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; b -&gt; m b
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span></span><span>
+</span><span id="line-28"></span><span>
+</span><span id="line-29"></span><span>  </span><span class="hs-comment">-- | Generic fold, ignoring sorts.</span><span>
+</span><span id="line-30"></span><span>  </span><span id="foldTerm"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-type">foldTerm</span></a></span></span><span> </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621680835225"><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="#local-6989586621680835225"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835225"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835247"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835225"><span class="hs-identifier hs-type">m</span></a></span></span><span>
+</span><span id="line-31"></span><span>
+</span><span id="line-32"></span><span>  </span><span class="hs-keyword">default</span><span> </span><span id="foldTerm"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-type">foldTerm</span></a></span></span><span>
+</span><span id="line-33"></span><span>    </span><span class="hs-glyph">::</span><span> </span><span id="local-6989586621680835232"><span id="local-6989586621680835233"><span id="local-6989586621680835234"><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Monoid</span></span><span> </span><span class="annot"><a href="#local-6989586621680835234"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Foldable</span></span><span> </span><span class="annot"><a href="#local-6989586621680835233"><span class="hs-identifier hs-type">f</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835232"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621680835233"><span class="hs-identifier hs-type">f</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835232"><span class="hs-identifier hs-type">b</span></a></span><span> </span><span class="annot"><span class="hs-operator hs-type">~</span></span><span> </span><span class="annot"><a href="#local-6989586621680835247"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835234"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835247"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835234"><span class="hs-identifier hs-type">m</span></a></span></span></span></span><span>
+</span><span id="line-34"></span><span>  </span><span id="local-6989586621680834959"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var hs-var">foldTerm</span></a></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(b -&gt; m) -&gt; a -&gt; m
+forall (t :: * -&gt; *) m a.
+(Foldable t, Monoid m) =&gt;
+(a -&gt; m) -&gt; t a -&gt; m
+</span><span class="hs-identifier hs-var">foldMap</span></span><span> </span><span class="annot"><span class="annottext">((b -&gt; m) -&gt; a -&gt; m)
+-&gt; ((Term -&gt; m) -&gt; b -&gt; m) -&gt; (Term -&gt; m) -&gt; a -&gt; m
+forall b c a. (b -&gt; c) -&gt; (a -&gt; b) -&gt; a -&gt; c
+</span><span class="hs-operator hs-var">.</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; b -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span></span><span>
+</span><span id="line-35"></span><span>
+</span><span id="line-36"></span><span class="hs-comment">-- Constants</span><span>
+</span><span id="line-37"></span><span>
+</span><span id="line-38"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Bool</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-39"></span><span>  </span><span id="local-6989586621680834940"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *). Monad m =&gt; (Term -&gt; m Term) -&gt; Bool -&gt; m Bool
+</span><a href="#local-6989586621680834940"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; m Bool
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-40"></span><span>  </span><span id="local-6989586621680834936"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; Bool -&gt; m
+</span><a href="#local-6989586621680834936"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><span class="hs-identifier">_</span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Bool -&gt; m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-41"></span><span>
+</span><span id="line-42"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Int</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-43"></span><span>  </span><span id="local-6989586621680834929"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *). Monad m =&gt; (Term -&gt; m Term) -&gt; Int -&gt; m Int
+</span><a href="#local-6989586621680834929"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; m Int
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-44"></span><span>  </span><span id="local-6989586621680834926"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; Int -&gt; m
+</span><a href="#local-6989586621680834926"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><span class="hs-identifier">_</span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Int -&gt; m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-45"></span><span>
+</span><span id="line-46"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Integer</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-47"></span><span>  </span><span id="local-6989586621680834919"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(Term -&gt; m Term) -&gt; Integer -&gt; m Integer
+</span><a href="#local-6989586621680834919"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; m Integer
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-48"></span><span>  </span><span id="local-6989586621680834916"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; Integer -&gt; m
+</span><a href="#local-6989586621680834916"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><span class="hs-identifier">_</span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-49"></span><span>
+</span><span id="line-50"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><span class="hs-identifier hs-type">Char</span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-51"></span><span>  </span><span id="local-6989586621680834909"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *). Monad m =&gt; (Term -&gt; m Term) -&gt; Char -&gt; m Char
+</span><a href="#local-6989586621680834909"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char -&gt; m Char
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-52"></span><span>  </span><span id="local-6989586621680834906"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; Char -&gt; m
+</span><a href="#local-6989586621680834906"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><span class="hs-identifier">_</span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Char -&gt; m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-53"></span><span>
+</span><span id="line-54"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="Agda.Syntax.Abstract.Name.html#QName"><span class="hs-identifier hs-type">QName</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-55"></span><span>  </span><span id="local-6989586621680834899"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(Term -&gt; m Term) -&gt; QName -&gt; m QName
+</span><a href="#local-6989586621680834899"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><span class="hs-identifier">_</span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">QName -&gt; m QName
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span>
+</span><span id="line-56"></span><span>  </span><span id="local-6989586621680834896"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; QName -&gt; m
+</span><a href="#local-6989586621680834896"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><span class="hs-identifier">_</span></span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">QName -&gt; m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-57"></span><span>
+</span><span id="line-58"></span><span class="hs-comment">-- Functors</span><span>
+</span><span id="line-59"></span><span>
+</span><span id="line-60"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680834892"><span id="local-6989586621680834894"><span id="local-6989586621680835208"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835208"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.Elim.html#Elim%27"><span class="hs-identifier hs-type">Elim'</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835208"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span>      </span><span class="hs-keyword">where</span><span>
+</span><span id="line-61"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680834888"><span id="local-6989586621680834890"><span id="local-6989586621680835207"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835207"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Common.html#Arg"><span class="hs-identifier hs-type">Arg</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835207"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span>        </span><span class="hs-keyword">where</span><span>
+</span><span id="line-62"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680834884"><span id="local-6989586621680834886"><span id="local-6989586621680835206"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835206"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Dom"><span class="hs-identifier hs-type">Dom</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835206"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span>        </span><span class="hs-keyword">where</span><span>
+</span><span id="line-63"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680834880"><span id="local-6989586621680834882"><span id="local-6989586621680835205"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835205"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">[</span><span class="annot"><a href="#local-6989586621680835205"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">]</span></span></span></span><span>            </span><span class="hs-keyword">where</span><span>
+</span><span id="line-64"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680834876"><span id="local-6989586621680834878"><span id="local-6989586621680835204"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835204"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="hs-identifier hs-type">Maybe</span></span><span> </span><span class="annot"><a href="#local-6989586621680835204"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span>      </span><span class="hs-keyword">where</span><span>
+</span><span id="line-65"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680834872"><span id="local-6989586621680834874"><span id="local-6989586621680835203"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835203"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Blocked"><span class="hs-identifier hs-type">Blocked</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835203"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span>    </span><span class="hs-keyword">where</span><span>
+</span><span id="line-66"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680834868"><span id="local-6989586621680834870"><span id="local-6989586621680835202"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835202"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Abs"><span class="hs-identifier hs-type">Abs</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835202"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span>        </span><span class="hs-keyword">where</span><span>
+</span><span id="line-67"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680834864"><span id="local-6989586621680834866"><span id="local-6989586621680835201"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835201"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Tele"><span class="hs-identifier hs-type">Tele</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835201"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span>       </span><span class="hs-keyword">where</span><span>
+</span><span id="line-68"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680834860"><span id="local-6989586621680834862"><span id="local-6989586621680835200"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835200"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Common.html#WithHiding"><span class="hs-identifier hs-type">WithHiding</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835200"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-69"></span><span>
+</span><span id="line-70"></span><span class="hs-comment">-- Tuples</span><span>
+</span><span id="line-71"></span><span>
+</span><span id="line-72"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680835196"><span id="local-6989586621680835197"><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835197"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835196"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680835197"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621680835196"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">)</span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-73"></span><span>  </span><span id="local-6989586621680834844"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(Term -&gt; m Term) -&gt; (a, b) -&gt; m (a, b)
+</span><a href="#local-6989586621680834844"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span id="local-6989586621680834843"><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834843"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680834842"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834842"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834841"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834841"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a -&gt; b -&gt; (a, b)) -&gt; m a -&gt; m (b -&gt; (a, b))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; a -&gt; m a
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834843"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834842"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">m (b -&gt; (a, b)) -&gt; m b -&gt; m (a, b)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; b -&gt; m b
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834843"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834841"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-74"></span><span>  </span><span id="local-6989586621680834833"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; (a, b) -&gt; m
+</span><a href="#local-6989586621680834833"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span id="local-6989586621680834832"><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834832"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680834831"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834831"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834830"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834830"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; a -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834832"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834831"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">m -&gt; m -&gt; m
+forall a. Monoid a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mappend`</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; b -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834832"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834830"><span class="hs-identifier hs-var">y</span></a></span><span>
+</span><span id="line-75"></span><span>
+</span><span id="line-76"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680835181"><span id="local-6989586621680835182"><span id="local-6989586621680835183"><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835183"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835182"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835181"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680835183"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621680835182"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621680835181"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">)</span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-77"></span><span>  </span><span id="local-6989586621680834811"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(Term -&gt; m Term) -&gt; (a, b, c) -&gt; m (a, b, c)
+</span><a href="#local-6989586621680834811"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span id="local-6989586621680834810"><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834810"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680834809"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834809"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834808"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834808"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834807"><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621680834807"><span class="hs-identifier hs-var">z</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a -&gt; b -&gt; c -&gt; (a, b, c)) -&gt; m a -&gt; m (b -&gt; c -&gt; (a, b, c))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; a -&gt; m a
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834810"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834809"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">m (b -&gt; c -&gt; (a, b, c)) -&gt; m b -&gt; m (c -&gt; (a, b, c))
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; b -&gt; m b
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834810"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834808"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">m (c -&gt; (a, b, c)) -&gt; m c -&gt; m (a, b, c)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; c -&gt; m c
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834810"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621680834807"><span class="hs-identifier hs-var">z</span></a></span><span>
+</span><span id="line-78"></span><span>  </span><span id="local-6989586621680834798"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; (a, b, c) -&gt; m
+</span><a href="#local-6989586621680834798"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span id="local-6989586621680834797"><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834797"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680834796"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834796"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834795"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834795"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834794"><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621680834794"><span class="hs-identifier hs-var">z</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[m] -&gt; m
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; a -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834797"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834796"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; b -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834797"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834795"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; c -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834797"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621680834794"><span class="hs-identifier hs-var">z</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-79"></span><span>
+</span><span id="line-80"></span><span class="hs-keyword">instance</span><span> </span><span id="local-6989586621680835170"><span id="local-6989586621680835171"><span id="local-6989586621680835172"><span id="local-6989586621680835173"><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835173"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835172"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835171"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835170"><span class="hs-identifier hs-type">d</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="#local-6989586621680835173"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621680835172"><span class="hs-identifier hs-type">b</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621680835171"><span class="hs-identifier hs-type">c</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><a href="#local-6989586621680835170"><span class="hs-identifier hs-type">d</span></a></span><span class="hs-special">)</span></span></span></span></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-81"></span><span>  </span><span id="local-6989586621680834771"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(Term -&gt; m Term) -&gt; (a, b, c, d) -&gt; m (a, b, c, d)
+</span><a href="#local-6989586621680834771"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span id="local-6989586621680834770"><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834770"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680834769"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834769"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834768"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834768"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834767"><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621680834767"><span class="hs-identifier hs-var">z</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834766"><span class="annot"><span class="annottext">d
+</span><a href="#local-6989586621680834766"><span class="hs-identifier hs-var">u</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-special">(</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">,</span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">(a -&gt; b -&gt; c -&gt; d -&gt; (a, b, c, d))
+-&gt; m a -&gt; m (b -&gt; c -&gt; d -&gt; (a, b, c, d))
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; a -&gt; m a
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834770"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834769"><span class="hs-identifier hs-var">x</span></a></span><span> </span><span class="annot"><span class="annottext">m (b -&gt; c -&gt; d -&gt; (a, b, c, d))
+-&gt; m b -&gt; m (c -&gt; d -&gt; (a, b, c, d))
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; b -&gt; m b
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834770"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834768"><span class="hs-identifier hs-var">y</span></a></span><span> </span><span class="annot"><span class="annottext">m (c -&gt; d -&gt; (a, b, c, d)) -&gt; m c -&gt; m (d -&gt; (a, b, c, d))
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; c -&gt; m c
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834770"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621680834767"><span class="hs-identifier hs-var">z</span></a></span><span> </span><span class="annot"><span class="annottext">m (d -&gt; (a, b, c, d)) -&gt; m d -&gt; m (a, b, c, d)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; d -&gt; m d
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834770"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">d
+</span><a href="#local-6989586621680834766"><span class="hs-identifier hs-var">u</span></a></span><span>
+</span><span id="line-82"></span><span>  </span><span id="local-6989586621680834755"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; (a, b, c, d) -&gt; m
+</span><a href="#local-6989586621680834755"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span id="local-6989586621680834754"><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834754"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span id="local-6989586621680834753"><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834753"><span class="hs-identifier hs-var">x</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834752"><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834752"><span class="hs-identifier hs-var">y</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834751"><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621680834751"><span class="hs-identifier hs-var">z</span></a></span></span><span class="hs-special">,</span><span> </span><span id="local-6989586621680834750"><span class="annot"><span class="annottext">d
+</span><a href="#local-6989586621680834750"><span class="hs-identifier hs-var">u</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">[m] -&gt; m
+forall a. Monoid a =&gt; [a] -&gt; a
+</span><span class="hs-identifier hs-var">mconcat</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; a -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834754"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">a
+</span><a href="#local-6989586621680834753"><span class="hs-identifier hs-var">x</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; b -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834754"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">b
+</span><a href="#local-6989586621680834752"><span class="hs-identifier hs-var">y</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; c -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834754"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">c
+</span><a href="#local-6989586621680834751"><span class="hs-identifier hs-var">z</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; d -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834754"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">d
+</span><a href="#local-6989586621680834750"><span class="hs-identifier hs-var">u</span></a></span><span class="hs-special">]</span><span>
+</span><span id="line-83"></span><span>
+</span><span id="line-84"></span><span class="hs-comment">-- Real terms</span><span>
+</span><span id="line-85"></span><span>
+</span><span id="line-86"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.html#Term"><span class="hs-identifier hs-type">Term</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-87"></span><span>
+</span><span id="line-88"></span><span>  </span><span id="local-6989586621680834695"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *). Monad m =&gt; (Term -&gt; m Term) -&gt; Term -&gt; m Term
+</span><a href="#local-6989586621680834695"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span id="local-6989586621680834694"><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-89"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span id="local-6989586621680834692"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680834692"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span id="local-6989586621680834691"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834691"><span class="hs-identifier hs-var">xs</span></a></span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">Int -&gt; Elims -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#Var"><span class="hs-identifier hs-var">Var</span></a></span><span> </span><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680834692"><span class="hs-identifier hs-var">i</span></a></span><span> </span><span class="annot"><span class="annottext">(Elims -&gt; Term) -&gt; m Elims -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Elims -&gt; m Elims
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834691"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-90"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span id="local-6989586621680834688"><span class="annot"><span class="annottext">QName
+</span><a href="#local-6989586621680834688"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621680834687"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834687"><span class="hs-identifier hs-var">xs</span></a></span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">QName -&gt; Elims -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#Def"><span class="hs-identifier hs-var">Def</span></a></span><span> </span><span class="annot"><span class="annottext">QName
+</span><a href="#local-6989586621680834688"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">(Elims -&gt; Term) -&gt; m Elims -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Elims -&gt; m Elims
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834687"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-91"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Con"><span class="hs-identifier hs-type">Con</span></a></span><span> </span><span id="local-6989586621680834685"><span class="annot"><span class="annottext">ConHead
+</span><a href="#local-6989586621680834685"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621680834684"><span class="annot"><span class="annottext">ConInfo
+</span><a href="#local-6989586621680834684"><span class="hs-identifier hs-var">ci</span></a></span></span><span> </span><span id="local-6989586621680834683"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834683"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">ConHead -&gt; ConInfo -&gt; Elims -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#Con"><span class="hs-identifier hs-var">Con</span></a></span><span> </span><span class="annot"><span class="annottext">ConHead
+</span><a href="#local-6989586621680834685"><span class="hs-identifier hs-var">c</span></a></span><span> </span><span class="annot"><span class="annottext">ConInfo
+</span><a href="#local-6989586621680834684"><span class="hs-identifier hs-var">ci</span></a></span><span> </span><span class="annot"><span class="annottext">(Elims -&gt; Term) -&gt; m Elims -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Elims -&gt; m Elims
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834683"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-92"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Lam"><span class="hs-identifier hs-type">Lam</span></a></span><span> </span><span id="local-6989586621680834681"><span class="annot"><span class="annottext">ArgInfo
+</span><a href="#local-6989586621680834681"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621680834680"><span class="annot"><span class="annottext">Abs Term
+</span><a href="#local-6989586621680834680"><span class="hs-identifier hs-var">b</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">ArgInfo -&gt; Abs Term -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#Lam"><span class="hs-identifier hs-var">Lam</span></a></span><span> </span><span class="annot"><span class="annottext">ArgInfo
+</span><a href="#local-6989586621680834681"><span class="hs-identifier hs-var">h</span></a></span><span> </span><span class="annot"><span class="annottext">(Abs Term -&gt; Term) -&gt; m (Abs Term) -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Abs Term -&gt; m (Abs Term)
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Abs Term
+</span><a href="#local-6989586621680834680"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-93"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Pi"><span class="hs-identifier hs-type">Pi</span></a></span><span> </span><span id="local-6989586621680834678"><span class="annot"><span class="annottext">Dom Type
+</span><a href="#local-6989586621680834678"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680834677"><span class="annot"><span class="annottext">Abs Type
+</span><a href="#local-6989586621680834677"><span class="hs-identifier hs-var">b</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">(Dom Type -&gt; Abs Type -&gt; Term) -&gt; (Dom Type, Abs Type) -&gt; Term
+forall a b c. (a -&gt; b -&gt; c) -&gt; (a, b) -&gt; c
+</span><span class="hs-identifier hs-var">uncurry</span></span><span> </span><span class="annot"><span class="annottext">Dom Type -&gt; Abs Type -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#Pi"><span class="hs-identifier hs-var">Pi</span></a></span><span> </span><span class="annot"><span class="annottext">((Dom Type, Abs Type) -&gt; Term) -&gt; m (Dom Type, Abs Type) -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; (Dom Type, Abs Type) -&gt; m (Dom Type, Abs Type)
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Dom Type
+</span><a href="#local-6989586621680834678"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Abs Type
+</span><a href="#local-6989586621680834677"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-94"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#MetaV"><span class="hs-identifier hs-type">MetaV</span></a></span><span> </span><span id="local-6989586621680834674"><span class="annot"><span class="annottext">MetaId
+</span><a href="#local-6989586621680834674"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span id="local-6989586621680834673"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834673"><span class="hs-identifier hs-var">xs</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">MetaId -&gt; Elims -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#MetaV"><span class="hs-identifier hs-var">MetaV</span></a></span><span> </span><span class="annot"><span class="annottext">MetaId
+</span><a href="#local-6989586621680834674"><span class="hs-identifier hs-var">m</span></a></span><span> </span><span class="annot"><span class="annottext">(Elims -&gt; Term) -&gt; m Elims -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Elims -&gt; m Elims
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834673"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-95"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Level"><span class="hs-identifier hs-type">Level</span></a></span><span> </span><span id="local-6989586621680834671"><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834671"><span class="hs-identifier hs-var">l</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">Level -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#Level"><span class="hs-identifier hs-var">Level</span></a></span><span> </span><span class="annot"><span class="annottext">(Level -&gt; Term) -&gt; m Level -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Level -&gt; m Level
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834671"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-96"></span><span>    </span><span id="local-6989586621680834670"><span class="annot"><span class="annottext">t :: Term
+</span><a href="#local-6989586621680834670"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><a href="Agda.Syntax.Internal.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span class="hs-special">{</span><span class="hs-special">}</span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834670"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-97"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Sort"><span class="hs-identifier hs-type">Sort</span></a></span><span> </span><span id="local-6989586621680834667"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834667"><span class="hs-identifier hs-var">s</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">Sort -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#Sort"><span class="hs-identifier hs-var">Sort</span></a></span><span> </span><span class="annot"><span class="annottext">(Sort -&gt; Term) -&gt; m Sort -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Sort -&gt; m Sort
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834667"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-98"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#DontCare"><span class="hs-identifier hs-type">DontCare</span></a></span><span> </span><span id="local-6989586621680834665"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834665"><span class="hs-identifier hs-var">mv</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">Term -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#DontCare"><span class="hs-identifier hs-var">DontCare</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; Term) -&gt; m Term -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Term -&gt; m Term
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834665"><span class="hs-identifier hs-var">mv</span></a></span><span>
+</span><span id="line-99"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Dummy"><span class="hs-identifier hs-type">Dummy</span></a></span><span> </span><span id="local-6989586621680834663"><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680834663"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621680834662"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834662"><span class="hs-identifier hs-var">xs</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; m Term -&gt; m Term
+forall (m :: * -&gt; *) a b. Monad m =&gt; (a -&gt; m b) -&gt; m a -&gt; m b
+</span><span class="hs-operator hs-var">=&lt;&lt;</span></span><span> </span><span class="annot"><span class="annottext">String -&gt; Elims -&gt; Term
+</span><a href="Agda.Syntax.Internal.html#Dummy"><span class="hs-identifier hs-var">Dummy</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><a href="#local-6989586621680834663"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">(Elims -&gt; Term) -&gt; m Elims -&gt; m Term
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Elims -&gt; m Elims
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834694"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834662"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-100"></span><span>
+</span><span id="line-101"></span><span>  </span><span id="local-6989586621680834633"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; Term -&gt; m
+</span><a href="#local-6989586621680834633"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span id="local-6989586621680834632"><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span id="local-6989586621680834631"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834631"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834631"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="annot"><span class="annottext">m -&gt; m -&gt; m
+forall a. Monoid a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">`mappend`</span></span><span> </span><span class="hs-keyword">case</span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834631"><span class="hs-identifier hs-var">t</span></a></span><span> </span><span class="hs-keyword">of</span><span>
+</span><span id="line-102"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Var"><span class="hs-identifier hs-type">Var</span></a></span><span> </span><span id="local-6989586621680834630"><span class="annot"><span class="annottext">Int
+</span><a href="#local-6989586621680834630"><span class="hs-identifier hs-var">i</span></a></span></span><span> </span><span id="local-6989586621680834629"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834629"><span class="hs-identifier hs-var">xs</span></a></span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Elims -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834629"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-103"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Def"><span class="hs-identifier hs-type">Def</span></a></span><span> </span><span id="local-6989586621680834628"><span class="annot"><span class="annottext">QName
+</span><a href="#local-6989586621680834628"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621680834627"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834627"><span class="hs-identifier hs-var">xs</span></a></span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Elims -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834627"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-104"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Con"><span class="hs-identifier hs-type">Con</span></a></span><span> </span><span id="local-6989586621680834626"><span class="annot"><span class="annottext">ConHead
+</span><a href="#local-6989586621680834626"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span id="local-6989586621680834625"><span class="annot"><span class="annottext">ConInfo
+</span><a href="#local-6989586621680834625"><span class="hs-identifier hs-var">ci</span></a></span></span><span> </span><span id="local-6989586621680834624"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834624"><span class="hs-identifier hs-var">xs</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Elims -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834624"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-105"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Lam"><span class="hs-identifier hs-type">Lam</span></a></span><span> </span><span id="local-6989586621680834623"><span class="annot"><span class="annottext">ArgInfo
+</span><a href="#local-6989586621680834623"><span class="hs-identifier hs-var">h</span></a></span></span><span> </span><span id="local-6989586621680834622"><span class="annot"><span class="annottext">Abs Term
+</span><a href="#local-6989586621680834622"><span class="hs-identifier hs-var">b</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Abs Term -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Abs Term
+</span><a href="#local-6989586621680834622"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-106"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Pi"><span class="hs-identifier hs-type">Pi</span></a></span><span> </span><span id="local-6989586621680834621"><span class="annot"><span class="annottext">Dom Type
+</span><a href="#local-6989586621680834621"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680834620"><span class="annot"><span class="annottext">Abs Type
+</span><a href="#local-6989586621680834620"><span class="hs-identifier hs-var">b</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; (Dom Type, Abs Type) -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">Dom Type
+</span><a href="#local-6989586621680834621"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Abs Type
+</span><a href="#local-6989586621680834620"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">)</span><span>
+</span><span id="line-107"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#MetaV"><span class="hs-identifier hs-type">MetaV</span></a></span><span> </span><span id="local-6989586621680834619"><span class="annot"><span class="annottext">MetaId
+</span><a href="#local-6989586621680834619"><span class="hs-identifier hs-var">m</span></a></span></span><span> </span><span id="local-6989586621680834618"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834618"><span class="hs-identifier hs-var">xs</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Elims -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834618"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-108"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Level"><span class="hs-identifier hs-type">Level</span></a></span><span> </span><span id="local-6989586621680834617"><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834617"><span class="hs-identifier hs-var">l</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Level -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834617"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-109"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Lit"><span class="hs-identifier hs-type">Lit</span></a></span><span> </span><span class="annot"><span class="annottext">Literal
+</span><span class="hs-identifier">_</span></span><span>       </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-110"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Sort"><span class="hs-identifier hs-type">Sort</span></a></span><span> </span><span id="local-6989586621680834616"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834616"><span class="hs-identifier hs-var">s</span></a></span></span><span>      </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Sort -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834616"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-111"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#DontCare"><span class="hs-identifier hs-type">DontCare</span></a></span><span> </span><span id="local-6989586621680834615"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834615"><span class="hs-identifier hs-var">mv</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Term -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834615"><span class="hs-identifier hs-var">mv</span></a></span><span>
+</span><span id="line-112"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Dummy"><span class="hs-identifier hs-type">Dummy</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680834614"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834614"><span class="hs-identifier hs-var">xs</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Elims -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834632"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834614"><span class="hs-identifier hs-var">xs</span></a></span><span>
+</span><span id="line-113"></span><span>
+</span><span id="line-114"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.html#Level"><span class="hs-identifier hs-type">Level</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-115"></span><span>  </span><span id="local-6989586621680834603"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(Term -&gt; m Term) -&gt; Level -&gt; m Level
+</span><a href="#local-6989586621680834603"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span id="local-6989586621680834602"><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834602"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Max"><span class="hs-identifier hs-type">Max</span></a></span><span> </span><span id="local-6989586621680834600"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621680834600"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621680834599"><span class="annot"><span class="annottext">[PlusLevel' Term]
+</span><a href="#local-6989586621680834599"><span class="hs-keyword hs-var">as</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; [PlusLevel' Term] -&gt; Level
+forall t. Integer -&gt; [PlusLevel' t] -&gt; Level' t
+</span><a href="Agda.Syntax.Internal.html#Max"><span class="hs-identifier hs-var">Max</span></a></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621680834600"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">([PlusLevel' Term] -&gt; Level) -&gt; m [PlusLevel' Term] -&gt; m Level
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; [PlusLevel' Term] -&gt; m [PlusLevel' Term]
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834602"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">[PlusLevel' Term]
+</span><a href="#local-6989586621680834599"><span class="hs-keyword hs-var">as</span></a></span><span>
+</span><span id="line-116"></span><span>  </span><span id="local-6989586621680834594"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; Level -&gt; m
+</span><a href="#local-6989586621680834594"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span id="local-6989586621680834593"><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834593"><span class="hs-identifier hs-var">f</span></a></span></span><span>      </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Max"><span class="hs-identifier hs-type">Max</span></a></span><span> </span><span id="local-6989586621680834592"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621680834592"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621680834591"><span class="annot"><span class="annottext">[PlusLevel' Term]
+</span><a href="#local-6989586621680834591"><span class="hs-keyword hs-var">as</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; [PlusLevel' Term] -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834593"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">[PlusLevel' Term]
+</span><a href="#local-6989586621680834591"><span class="hs-keyword hs-var">as</span></a></span><span>
+</span><span id="line-117"></span><span>
+</span><span id="line-118"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.html#PlusLevel"><span class="hs-identifier hs-type">PlusLevel</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-119"></span><span>  </span><span id="local-6989586621680834581"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(Term -&gt; m Term) -&gt; PlusLevel' Term -&gt; m (PlusLevel' Term)
+</span><a href="#local-6989586621680834581"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span id="local-6989586621680834580"><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834580"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Plus"><span class="hs-identifier hs-type">Plus</span></a></span><span> </span><span id="local-6989586621680834578"><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621680834578"><span class="hs-identifier hs-var">n</span></a></span></span><span> </span><span id="local-6989586621680834577"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834577"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Integer -&gt; Term -&gt; PlusLevel' Term
+forall t. Integer -&gt; t -&gt; PlusLevel' t
+</span><a href="Agda.Syntax.Internal.html#Plus"><span class="hs-identifier hs-var">Plus</span></a></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><a href="#local-6989586621680834578"><span class="hs-identifier hs-var">n</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; PlusLevel' Term) -&gt; m Term -&gt; m (PlusLevel' Term)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Term -&gt; m Term
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834580"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834577"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-120"></span><span>  </span><span id="local-6989586621680834573"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; PlusLevel' Term -&gt; m
+</span><a href="#local-6989586621680834573"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span id="local-6989586621680834572"><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834572"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Plus"><span class="hs-identifier hs-type">Plus</span></a></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680834571"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834571"><span class="hs-identifier hs-var">l</span></a></span></span><span class="hs-special">)</span><span>      </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Term -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834572"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834571"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-121"></span><span>
+</span><span id="line-122"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-123"></span><span>  </span><span id="local-6989586621680834562"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *). Monad m =&gt; (Term -&gt; m Term) -&gt; Type -&gt; m Type
+</span><a href="#local-6989586621680834562"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span id="local-6989586621680834561"><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834561"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#El"><span class="hs-identifier hs-type">El</span></a></span><span> </span><span id="local-6989586621680834559"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834559"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621680834558"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834558"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">Sort -&gt; Term -&gt; Type
+forall t a. Sort' t -&gt; a -&gt; Type'' t a
+</span><a href="Agda.Syntax.Internal.html#El"><span class="hs-identifier hs-var">El</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834559"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; Type) -&gt; m Term -&gt; m Type
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Term -&gt; m Term
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834561"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834558"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-124"></span><span>  </span><span id="local-6989586621680834554"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; Type -&gt; m
+</span><a href="#local-6989586621680834554"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span id="local-6989586621680834553"><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834553"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#El"><span class="hs-identifier hs-type">El</span></a></span><span> </span><span id="local-6989586621680834552"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834552"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621680834551"><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834551"><span class="hs-identifier hs-var">t</span></a></span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Term -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834553"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Term
+</span><a href="#local-6989586621680834551"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-125"></span><span>
+</span><span id="line-126"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.html#Sort"><span class="hs-identifier hs-type">Sort</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-127"></span><span>  </span><span id="local-6989586621680834505"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *). Monad m =&gt; (Term -&gt; m Term) -&gt; Sort -&gt; m Sort
+</span><a href="#local-6989586621680834505"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span id="local-6989586621680834504"><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-128"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span id="local-6989586621680834502"><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834502"><span class="hs-identifier hs-var">l</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Level -&gt; Sort
+forall t. Level' t -&gt; Sort' t
+</span><a href="Agda.Syntax.Internal.html#Type"><span class="hs-identifier hs-var">Type</span></a></span><span> </span><span class="annot"><span class="annottext">(Level -&gt; Sort) -&gt; m Level -&gt; m Sort
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Level -&gt; m Level
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834502"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-129"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Prop"><span class="hs-identifier hs-type">Prop</span></a></span><span> </span><span id="local-6989586621680834500"><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834500"><span class="hs-identifier hs-var">l</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Level -&gt; Sort
+forall t. Level' t -&gt; Sort' t
+</span><a href="Agda.Syntax.Internal.html#Prop"><span class="hs-identifier hs-var">Prop</span></a></span><span> </span><span class="annot"><span class="annottext">(Level -&gt; Sort) -&gt; m Level -&gt; m Sort
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Level -&gt; m Level
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834500"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-130"></span><span>    </span><span id="local-6989586621680834499"><span class="annot"><span class="annottext">s :: Sort
+</span><a href="#local-6989586621680834499"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#Inf"><span class="hs-identifier hs-type">Inf</span></a></span><span> </span><span class="annot"><span class="annottext">IsFibrant
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Sort -&gt; m Sort
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834499"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-131"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#SSet"><span class="hs-identifier hs-type">SSet</span></a></span><span> </span><span id="local-6989586621680834496"><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834496"><span class="hs-identifier hs-var">l</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Level -&gt; Sort
+forall t. Level' t -&gt; Sort' t
+</span><a href="Agda.Syntax.Internal.html#SSet"><span class="hs-identifier hs-var">SSet</span></a></span><span> </span><span class="annot"><span class="annottext">(Level -&gt; Sort) -&gt; m Level -&gt; m Sort
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Level -&gt; m Level
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834496"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-132"></span><span>    </span><span id="local-6989586621680834495"><span class="annot"><span class="annottext">s :: Sort
+</span><a href="#local-6989586621680834495"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><span class="annottext">Sort
+</span><a href="Agda.Syntax.Internal.html#SizeUniv"><span class="hs-identifier hs-var">SizeUniv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Sort -&gt; m Sort
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834495"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-133"></span><span>    </span><span id="local-6989586621680834493"><span class="annot"><span class="annottext">s :: Sort
+</span><a href="#local-6989586621680834493"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><span class="annottext">Sort
+</span><a href="Agda.Syntax.Internal.html#LockUniv"><span class="hs-identifier hs-var">LockUniv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Sort -&gt; m Sort
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834493"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-134"></span><span>    </span><span id="local-6989586621680834491"><span class="annot"><span class="annottext">s :: Sort
+</span><a href="#local-6989586621680834491"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-glyph">@</span><span class="annot"><span class="annottext">Sort
+</span><a href="Agda.Syntax.Internal.html#IntervalUniv"><span class="hs-identifier hs-var">IntervalUniv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Sort -&gt; m Sort
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834491"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-135"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#PiSort"><span class="hs-identifier hs-type">PiSort</span></a></span><span> </span><span id="local-6989586621680834488"><span class="annot"><span class="annottext">Dom' Term Term
+</span><a href="#local-6989586621680834488"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680834487"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834487"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621680834486"><span class="annot"><span class="annottext">Abs Sort
+</span><a href="#local-6989586621680834486"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Dom' Term Term -&gt; Sort -&gt; Abs Sort -&gt; Sort
+forall t. Dom' t t -&gt; Sort' t -&gt; Abs (Sort' t) -&gt; Sort' t
+</span><a href="Agda.Syntax.Internal.html#PiSort"><span class="hs-identifier hs-var">PiSort</span></a></span><span>   </span><span class="annot"><span class="annottext">(Dom' Term Term -&gt; Sort -&gt; Abs Sort -&gt; Sort)
+-&gt; m (Dom' Term Term) -&gt; m (Sort -&gt; Abs Sort -&gt; Sort)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Dom' Term Term -&gt; m (Dom' Term Term)
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Dom' Term Term
+</span><a href="#local-6989586621680834488"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">m (Sort -&gt; Abs Sort -&gt; Sort) -&gt; m Sort -&gt; m (Abs Sort -&gt; Sort)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Sort -&gt; m Sort
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834487"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">m (Abs Sort -&gt; Sort) -&gt; m (Abs Sort) -&gt; m Sort
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Abs Sort -&gt; m (Abs Sort)
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Abs Sort
+</span><a href="#local-6989586621680834486"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><span id="line-136"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#FunSort"><span class="hs-identifier hs-type">FunSort</span></a></span><span> </span><span id="local-6989586621680834484"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834484"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680834483"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834483"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Sort -&gt; Sort -&gt; Sort
+forall t. Sort' t -&gt; Sort' t -&gt; Sort' t
+</span><a href="Agda.Syntax.Internal.html#FunSort"><span class="hs-identifier hs-var">FunSort</span></a></span><span>   </span><span class="annot"><span class="annottext">(Sort -&gt; Sort -&gt; Sort) -&gt; m Sort -&gt; m (Sort -&gt; Sort)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Sort -&gt; m Sort
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834484"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">m (Sort -&gt; Sort) -&gt; m Sort -&gt; m Sort
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Sort -&gt; m Sort
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834483"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-137"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#UnivSort"><span class="hs-identifier hs-type">UnivSort</span></a></span><span> </span><span id="local-6989586621680834481"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834481"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Sort -&gt; Sort
+forall t. Sort' t -&gt; Sort' t
+</span><a href="Agda.Syntax.Internal.html#UnivSort"><span class="hs-identifier hs-var">UnivSort</span></a></span><span> </span><span class="annot"><span class="annottext">(Sort -&gt; Sort) -&gt; m Sort -&gt; m Sort
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Sort -&gt; m Sort
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834481"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-138"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#MetaS"><span class="hs-identifier hs-type">MetaS</span></a></span><span> </span><span id="local-6989586621680834479"><span class="annot"><span class="annottext">MetaId
+</span><a href="#local-6989586621680834479"><span class="hs-identifier hs-var">x</span></a></span></span><span> </span><span id="local-6989586621680834478"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834478"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">MetaId -&gt; Elims -&gt; Sort
+forall t. MetaId -&gt; [Elim' t] -&gt; Sort' t
+</span><a href="Agda.Syntax.Internal.html#MetaS"><span class="hs-identifier hs-var">MetaS</span></a></span><span> </span><span class="annot"><span class="annottext">MetaId
+</span><a href="#local-6989586621680834479"><span class="hs-identifier hs-var">x</span></a></span><span>  </span><span class="annot"><span class="annottext">(Elims -&gt; Sort) -&gt; m Elims -&gt; m Sort
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Elims -&gt; m Elims
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834478"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-139"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#DefS"><span class="hs-identifier hs-type">DefS</span></a></span><span> </span><span id="local-6989586621680834476"><span class="annot"><span class="annottext">QName
+</span><a href="#local-6989586621680834476"><span class="hs-identifier hs-var">q</span></a></span></span><span> </span><span id="local-6989586621680834475"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834475"><span class="hs-identifier hs-var">es</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">QName -&gt; Elims -&gt; Sort
+forall t. QName -&gt; [Elim' t] -&gt; Sort' t
+</span><a href="Agda.Syntax.Internal.html#DefS"><span class="hs-identifier hs-var">DefS</span></a></span><span> </span><span class="annot"><span class="annottext">QName
+</span><a href="#local-6989586621680834476"><span class="hs-identifier hs-var">q</span></a></span><span>   </span><span class="annot"><span class="annottext">(Elims -&gt; Sort) -&gt; m Elims -&gt; m Sort
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Elims -&gt; m Elims
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834504"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834475"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-140"></span><span>    </span><span id="local-6989586621680834474"><span class="annot"><span class="annottext">s :: Sort
+</span><a href="#local-6989586621680834474"><span class="hs-identifier hs-var">s</span></a></span></span><span class="hs-glyph">@</span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.html#DummyS"><span class="hs-identifier hs-type">DummyS</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-identifier">_</span></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Sort -&gt; m Sort
+forall (f :: * -&gt; *) a. Applicative f =&gt; a -&gt; f a
+</span><span class="hs-identifier hs-var">pure</span></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834474"><span class="hs-identifier hs-var">s</span></a></span><span>
+</span><span id="line-141"></span><span>
+</span><span id="line-142"></span><span>  </span><span id="local-6989586621680834437"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; Sort -&gt; m
+</span><a href="#local-6989586621680834437"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span id="local-6989586621680834436"><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-143"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Type"><span class="hs-identifier hs-type">Type</span></a></span><span> </span><span id="local-6989586621680834435"><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834435"><span class="hs-identifier hs-var">l</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Level -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834435"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-144"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Prop"><span class="hs-identifier hs-type">Prop</span></a></span><span> </span><span id="local-6989586621680834434"><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834434"><span class="hs-identifier hs-var">l</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Level -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834434"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-145"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#Inf"><span class="hs-identifier hs-type">Inf</span></a></span><span> </span><span class="annot"><span class="annottext">IsFibrant
+</span><span class="hs-identifier">_</span></span><span> </span><span class="annot"><span class="annottext">Integer
+</span><span class="hs-identifier">_</span></span><span>    </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-146"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#SSet"><span class="hs-identifier hs-type">SSet</span></a></span><span> </span><span id="local-6989586621680834433"><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834433"><span class="hs-identifier hs-var">l</span></a></span></span><span>     </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Level -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Level
+</span><a href="#local-6989586621680834433"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-147"></span><span>    </span><span class="annot"><span class="annottext">Sort
+</span><a href="Agda.Syntax.Internal.html#SizeUniv"><span class="hs-identifier hs-var">SizeUniv</span></a></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-148"></span><span>    </span><span class="annot"><span class="annottext">Sort
+</span><a href="Agda.Syntax.Internal.html#LockUniv"><span class="hs-identifier hs-var">LockUniv</span></a></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-149"></span><span>    </span><span class="annot"><span class="annottext">Sort
+</span><a href="Agda.Syntax.Internal.html#IntervalUniv"><span class="hs-identifier hs-var">IntervalUniv</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-150"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#PiSort"><span class="hs-identifier hs-type">PiSort</span></a></span><span> </span><span id="local-6989586621680834432"><span class="annot"><span class="annottext">Dom' Term Term
+</span><a href="#local-6989586621680834432"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680834431"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834431"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span id="local-6989586621680834430"><span class="annot"><span class="annottext">Abs Sort
+</span><a href="#local-6989586621680834430"><span class="hs-identifier hs-var">c</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Dom' Term Term -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Dom' Term Term
+</span><a href="#local-6989586621680834432"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">m -&gt; m -&gt; m
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Sort -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834431"><span class="hs-identifier hs-var">b</span></a></span><span> </span><span class="annot"><span class="annottext">m -&gt; m -&gt; m
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Abs Sort -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Abs Sort
+</span><a href="#local-6989586621680834430"><span class="hs-identifier hs-var">c</span></a></span><span>
+</span><span id="line-151"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#FunSort"><span class="hs-identifier hs-type">FunSort</span></a></span><span> </span><span id="local-6989586621680834429"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834429"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680834428"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834428"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Sort -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834429"><span class="hs-identifier hs-var">a</span></a></span><span> </span><span class="annot"><span class="annottext">m -&gt; m -&gt; m
+forall a. Semigroup a =&gt; a -&gt; a -&gt; a
+</span><span class="hs-operator hs-var">&lt;&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Sort -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834428"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-152"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#UnivSort"><span class="hs-identifier hs-type">UnivSort</span></a></span><span> </span><span id="local-6989586621680834427"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834427"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Sort -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834427"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-153"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#MetaS"><span class="hs-identifier hs-type">MetaS</span></a></span><span> </span><span class="annot"><span class="annottext">MetaId
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680834426"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834426"><span class="hs-identifier hs-var">es</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Elims -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834426"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-154"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#DefS"><span class="hs-identifier hs-type">DefS</span></a></span><span> </span><span class="annot"><span class="annottext">QName
+</span><span class="hs-identifier">_</span></span><span> </span><span id="local-6989586621680834425"><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834425"><span class="hs-identifier hs-var">es</span></a></span></span><span>  </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Elims -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834436"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Elims
+</span><a href="#local-6989586621680834425"><span class="hs-identifier hs-var">es</span></a></span><span>
+</span><span id="line-155"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#DummyS"><span class="hs-identifier hs-type">DummyS</span></a></span><span> </span><span class="annot"><span class="annottext">String
+</span><span class="hs-identifier">_</span></span><span>   </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">m
+forall a. Monoid a =&gt; a
+</span><span class="hs-identifier hs-var">mempty</span></span><span>
+</span><span id="line-156"></span><span>
+</span><span id="line-157"></span><span class="hs-keyword">instance</span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="Agda.Syntax.Internal.html#EqualityView"><span class="hs-identifier hs-type">EqualityView</span></a></span><span> </span><span class="hs-keyword">where</span><span>
+</span><span id="line-158"></span><span>
+</span><span id="line-159"></span><span>  </span><span id="local-6989586621680834397"><span class="annot"><span class="annottext">traverseTermM :: forall (m :: * -&gt; *).
+Monad m =&gt;
+(Term -&gt; m Term) -&gt; EqualityView -&gt; m EqualityView
+</span><a href="#local-6989586621680834397"><span class="hs-identifier hs-var hs-var hs-var hs-var">traverseTermM</span></a></span></span><span> </span><span id="local-6989586621680834396"><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834396"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-160"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#OtherType"><span class="hs-identifier hs-type">OtherType</span></a></span><span> </span><span id="local-6989586621680834394"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621680834394"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Type -&gt; EqualityView
+</span><a href="Agda.Syntax.Internal.html#OtherType"><span class="hs-identifier hs-var">OtherType</span></a></span><span>
+</span><span id="line-161"></span><span>      </span><span class="annot"><span class="annottext">(Type -&gt; EqualityView) -&gt; m Type -&gt; m EqualityView
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Type -&gt; m Type
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834396"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621680834394"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-162"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#IdiomType"><span class="hs-identifier hs-type">IdiomType</span></a></span><span> </span><span id="local-6989586621680834392"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621680834392"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Type -&gt; EqualityView
+</span><a href="Agda.Syntax.Internal.html#IdiomType"><span class="hs-identifier hs-var">IdiomType</span></a></span><span>
+</span><span id="line-163"></span><span>      </span><span class="annot"><span class="annottext">(Type -&gt; EqualityView) -&gt; m Type -&gt; m EqualityView
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Type -&gt; m Type
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834396"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621680834392"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-164"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#EqualityType"><span class="hs-identifier hs-type">EqualityType</span></a></span><span> </span><span id="local-6989586621680834390"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834390"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621680834389"><span class="annot"><span class="annottext">QName
+</span><a href="#local-6989586621680834389"><span class="hs-identifier hs-var">eq</span></a></span></span><span> </span><span id="local-6989586621680834388"><span class="annot"><span class="annottext">[Arg Term]
+</span><a href="#local-6989586621680834388"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621680834387"><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834387"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621680834386"><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834386"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680834385"><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834385"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">Sort
+-&gt; QName
+-&gt; [Arg Term]
+-&gt; Arg Term
+-&gt; Arg Term
+-&gt; Arg Term
+-&gt; EqualityView
+</span><a href="Agda.Syntax.Internal.html#EqualityType"><span class="hs-identifier hs-var">EqualityType</span></a></span><span> </span><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834390"><span class="hs-identifier hs-var">s</span></a></span><span> </span><span class="annot"><span class="annottext">QName
+</span><a href="#local-6989586621680834389"><span class="hs-identifier hs-var">eq</span></a></span><span>
+</span><span id="line-165"></span><span>      </span><span class="annot"><span class="annottext">([Arg Term] -&gt; Arg Term -&gt; Arg Term -&gt; Arg Term -&gt; EqualityView)
+-&gt; m [Arg Term]
+-&gt; m (Arg Term -&gt; Arg Term -&gt; Arg Term -&gt; EqualityView)
+forall (f :: * -&gt; *) a b. Functor f =&gt; (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;$&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Arg Term -&gt; m (Arg Term)) -&gt; [Arg Term] -&gt; m [Arg Term]
+forall (t :: * -&gt; *) (f :: * -&gt; *) a b.
+(Traversable t, Applicative f) =&gt;
+(a -&gt; f b) -&gt; t a -&gt; f (t b)
+</span><span class="hs-identifier hs-var">traverse</span></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Arg Term -&gt; m (Arg Term)
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834396"><span class="hs-identifier hs-var">f</span></a></span><span class="hs-special">)</span><span> </span><span class="annot"><span class="annottext">[Arg Term]
+</span><a href="#local-6989586621680834388"><span class="hs-identifier hs-var">l</span></a></span><span>
+</span><span id="line-166"></span><span>      </span><span class="annot"><span class="annottext">m (Arg Term -&gt; Arg Term -&gt; Arg Term -&gt; EqualityView)
+-&gt; m (Arg Term) -&gt; m (Arg Term -&gt; Arg Term -&gt; EqualityView)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Arg Term -&gt; m (Arg Term)
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834396"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834387"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-167"></span><span>      </span><span class="annot"><span class="annottext">m (Arg Term -&gt; Arg Term -&gt; EqualityView)
+-&gt; m (Arg Term) -&gt; m (Arg Term -&gt; EqualityView)
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Arg Term -&gt; m (Arg Term)
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834396"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834386"><span class="hs-identifier hs-var">a</span></a></span><span>
+</span><span id="line-168"></span><span>      </span><span class="annot"><span class="annottext">m (Arg Term -&gt; EqualityView) -&gt; m (Arg Term) -&gt; m EqualityView
+forall (f :: * -&gt; *) a b. Applicative f =&gt; f (a -&gt; b) -&gt; f a -&gt; f b
+</span><span class="hs-operator hs-var">&lt;*&gt;</span></span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; Arg Term -&gt; m (Arg Term)
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+</span><a href="#local-6989586621680834396"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834385"><span class="hs-identifier hs-var">b</span></a></span><span>
+</span><span id="line-169"></span><span>
+</span><span id="line-170"></span><span>  </span><span id="local-6989586621680834375"><span class="annot"><span class="annottext">foldTerm :: forall m. Monoid m =&gt; (Term -&gt; m) -&gt; EqualityView -&gt; m
+</span><a href="#local-6989586621680834375"><span class="hs-identifier hs-var hs-var hs-var hs-var">foldTerm</span></a></span></span><span> </span><span id="local-6989586621680834374"><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834374"><span class="hs-identifier hs-var">f</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="hs-glyph">\</span><span class="hs-glyph">case</span><span>
+</span><span id="line-171"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#OtherType"><span class="hs-identifier hs-type">OtherType</span></a></span><span> </span><span id="local-6989586621680834373"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621680834373"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Type -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834374"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621680834373"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-172"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#IdiomType"><span class="hs-identifier hs-type">IdiomType</span></a></span><span> </span><span id="local-6989586621680834372"><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621680834372"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; Type -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834374"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="annot"><span class="annottext">Type
+</span><a href="#local-6989586621680834372"><span class="hs-identifier hs-var">t</span></a></span><span>
+</span><span id="line-173"></span><span>    </span><span class="annot"><a href="Agda.Syntax.Internal.html#EqualityType"><span class="hs-identifier hs-type">EqualityType</span></a></span><span> </span><span id="local-6989586621680834371"><span class="annot"><span class="annottext">Sort
+</span><a href="#local-6989586621680834371"><span class="hs-identifier hs-var">s</span></a></span></span><span> </span><span id="local-6989586621680834370"><span class="annot"><span class="annottext">QName
+</span><a href="#local-6989586621680834370"><span class="hs-identifier hs-var">eq</span></a></span></span><span> </span><span id="local-6989586621680834369"><span class="annot"><span class="annottext">[Arg Term]
+</span><a href="#local-6989586621680834369"><span class="hs-identifier hs-var">l</span></a></span></span><span> </span><span id="local-6989586621680834368"><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834368"><span class="hs-identifier hs-var">t</span></a></span></span><span> </span><span id="local-6989586621680834367"><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834367"><span class="hs-identifier hs-var">a</span></a></span></span><span> </span><span id="local-6989586621680834366"><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834366"><span class="hs-identifier hs-var">b</span></a></span></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m) -&gt; [Arg Term] -&gt; m
+forall a m. (TermLike a, Monoid m) =&gt; (Term -&gt; m) -&gt; a -&gt; m
+</span><a href="Agda.Syntax.Internal.Generic.html#foldTerm"><span class="hs-identifier hs-var">foldTerm</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m
+</span><a href="#local-6989586621680834374"><span class="hs-identifier hs-var">f</span></a></span><span> </span><span class="hs-special">(</span><span class="annot"><span class="annottext">[Arg Term]
+</span><a href="#local-6989586621680834369"><span class="hs-identifier hs-var">l</span></a></span><span> </span><span class="annot"><span class="annottext">[Arg Term] -&gt; [Arg Term] -&gt; [Arg Term]
+forall a. [a] -&gt; [a] -&gt; [a]
+</span><span class="hs-operator hs-var">++</span></span><span> </span><span class="hs-special">[</span><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834368"><span class="hs-identifier hs-var">t</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834367"><span class="hs-identifier hs-var">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="annottext">Arg Term
+</span><a href="#local-6989586621680834366"><span class="hs-identifier hs-var">b</span></a></span><span class="hs-special">]</span><span class="hs-special">)</span><span>
+</span><span id="line-174"></span><span>
+</span><span id="line-175"></span><span class="hs-comment">-- | Put it in a monad to make it possible to do strictly.</span><span>
+</span><span id="line-176"></span><span id="local-6989586621680835125"><span id="local-6989586621680835126"><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#copyTerm"><span class="hs-identifier hs-type">copyTerm</span></a></span><span> </span><span class="hs-glyph">::</span><span> </span><span class="hs-special">(</span><span class="annot"><a href="Agda.Syntax.Internal.Generic.html#TermLike"><span class="hs-identifier hs-type">TermLike</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835126"><span class="hs-identifier hs-type">a</span></a></span><span class="hs-special">,</span><span> </span><span class="annot"><span class="hs-identifier hs-type">Monad</span></span><span> </span><span class="annot"><a href="#local-6989586621680835125"><span class="hs-identifier hs-type">m</span></a></span><span class="hs-special">)</span><span> </span><span class="hs-glyph">=&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835126"><span class="hs-identifier hs-type">a</span></a></span><span> </span><span class="hs-glyph">-&gt;</span><span> </span><span class="annot"><a href="#local-6989586621680835125"><span class="hs-identifier hs-type">m</span></a></span><span> </span><span class="annot"><a href="#local-6989586621680835126"><span class="hs-identifier hs-type">a</span></a></span></span></span><span>
+</span><span id="line-177"></span><span id="copyTerm"><span class="annot"><span class="annottext">copyTerm :: forall a (m :: * -&gt; *). (TermLike a, Monad m) =&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#copyTerm"><span class="hs-identifier hs-var hs-var">copyTerm</span></a></span></span><span> </span><span class="hs-glyph">=</span><span> </span><span class="annot"><span class="annottext">(Term -&gt; m Term) -&gt; a -&gt; m a
+forall a (m :: * -&gt; *).
+(TermLike a, Monad m) =&gt;
+(Term -&gt; m Term) -&gt; a -&gt; m a
+</span><a href="Agda.Syntax.Internal.Generic.html#traverseTermM"><span class="hs-identifier hs-var">traverseTermM</span></a></span><span> </span><span class="annot"><span class="annottext">Term -&gt; m Term
+forall (m :: * -&gt; *) a. Monad m =&gt; a -&gt; m a
+</span><span class="hs-identifier hs-var">return</span></span><span>
+</span><span id="line-178"></span></pre></body></html>
