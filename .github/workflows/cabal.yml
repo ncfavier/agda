@@ -103,6 +103,7 @@ jobs:
       uses: styfle/cancel-workflow-action@0.6.0
 name: Build (cabal)
 'on':
+  workflow_dispatch:
   pull_request:
     paths:
     - .github/workflows/cabal.yml
